@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { casesApi } from '../api/cases';
 import { teamsApi } from '../api/teams';
 import { scoringApi } from '../api/scoring';
+import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 const TABS = [
@@ -46,17 +47,11 @@ function CoursesTab() {
     setCreating(true);
     setError('');
     try {
-      const res = await casesApi.getAllCourses().then(() =>
-        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/courses/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-          body: JSON.stringify({ name: form.name.trim(), description: form.description.trim() || null }),
-        }).then((r) => r.json())
-      );
-      if (res.data) {
+      const res = await api.post('/courses/', {
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+      });
+      if (res?.data) {
         setCourses((prev) => [...prev, res.data]);
         setForm({ name: '', description: '' });
         setShowForm(false);
@@ -72,22 +67,14 @@ function CoursesTab() {
     if (!assigningCaseId || !assigningCourseId) return;
     setAssignMsg('');
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/cases/${assigningCaseId}/assign`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-          body: JSON.stringify({ course_id: Number(assigningCourseId) }),
-        }
-      ).then((r) => r.json());
+      await api.post(`/cases/${assigningCaseId}/assign`, {
+        course_id: Number(assigningCourseId),
+      });
       setAssignMsg('Case assigned successfully.');
       setAssigningCaseId('');
       setAssigningCourseId('');
-    } catch {
-      setAssignMsg('Assignment failed.');
+    } catch (err) {
+      setAssignMsg(err.message || 'Assignment failed.');
     }
     setTimeout(() => setAssignMsg(''), 3000);
   };
@@ -98,10 +85,7 @@ function CoursesTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900">Courses</h2>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
+        <button onClick={() => setShowForm(true)} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
           + New Course
         </button>
       </div>
@@ -115,31 +99,16 @@ function CoursesTab() {
           <form onSubmit={handleCreate} className="space-y-3">
             <div>
               <label className="label">Course name</label>
-              <input
-                className="input"
-                value={form.name}
-                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. Healthcare Innovation IV"
-                required
-              />
+              <input className="input" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Healthcare Innovation IV" required />
             </div>
             <div>
               <label className="label">Description (optional)</label>
-              <input
-                className="input"
-                value={form.description}
-                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                placeholder="e.g. Spring 2026 FMEA/RCA course"
-              />
+              <input className="input" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="e.g. Spring 2026 FMEA/RCA course" />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-3">
-              <button type="submit" disabled={creating} className="btn-primary">
-                {creating ? 'Creating...' : 'Create'}
-              </button>
-              <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">
-                Cancel
-              </button>
+              <button type="submit" disabled={creating} className="btn-primary">{creating ? 'Creating...' : 'Create'}</button>
+              <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
             </div>
           </form>
         </div>
@@ -166,41 +135,25 @@ function CoursesTab() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Case</label>
-            <select
-              className="input"
-              value={assigningCaseId}
-              onChange={(e) => setAssigningCaseId(e.target.value)}
-            >
+            <select className="input" value={assigningCaseId} onChange={(e) => setAssigningCaseId(e.target.value)}>
               <option value="">Select case...</option>
-              {cases.map((c) => (
-                <option key={c.id} value={c.id}>{c.title}</option>
-              ))}
+              {cases.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
           </div>
           <div>
             <label className="label">Course</label>
-            <select
-              className="input"
-              value={assigningCourseId}
-              onChange={(e) => setAssigningCourseId(e.target.value)}
-            >
+            <select className="input" value={assigningCourseId} onChange={(e) => setAssigningCourseId(e.target.value)}>
               <option value="">Select course...</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleAssign}
-            disabled={!assigningCaseId || !assigningCourseId}
-            className="btn-primary disabled:opacity-40"
-          >
+          <button onClick={handleAssign} disabled={!assigningCaseId || !assigningCourseId} className="btn-primary disabled:opacity-40">
             Assign
           </button>
           {assignMsg && (
-            <span className={`text-sm font-medium ${assignMsg.includes('failed') ? 'text-red-600' : 'text-emerald-600'}`}>
+            <span className={`text-sm font-medium ${assignMsg.includes('failed') || assignMsg.includes('Failed') ? 'text-red-600' : 'text-emerald-600'}`}>
               {assignMsg}
             </span>
           )}
@@ -213,6 +166,7 @@ function CoursesTab() {
 function TeamsTab() {
   const [teams, setTeams] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [usersMap, setUsersMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', course_id: '' });
@@ -221,11 +175,19 @@ function TeamsTab() {
   const [memberInputs, setMemberInputs] = useState({});
   const [memberMsgs, setMemberMsgs] = useState({});
 
+  const refreshTeams = async () => {
+    const res = await teamsApi.getAll();
+    setTeams(res?.data || []);
+  };
+
   useEffect(() => {
-    Promise.all([teamsApi.getAll(), casesApi.getAllCourses()])
-      .then(([tRes, cRes]) => {
+    Promise.all([teamsApi.getAll(), casesApi.getAllCourses(), api.get('/users/')])
+      .then(([tRes, cRes, uRes]) => {
         setTeams(tRes?.data || []);
         setCourses(cRes?.data || []);
+        const map = {};
+        (uRes?.data || []).forEach((u) => { map[u.id] = u.full_name; });
+        setUsersMap(map);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -256,8 +218,7 @@ function TeamsTab() {
       await teamsApi.addMember(teamId, Number(userId));
       setMemberMsgs((p) => ({ ...p, [teamId]: 'Member added.' }));
       setMemberInputs((p) => ({ ...p, [teamId]: '' }));
-      const res = await teamsApi.getAll();
-      setTeams(res?.data || []);
+      await refreshTeams();
     } catch (err) {
       setMemberMsgs((p) => ({ ...p, [teamId]: err.message || 'Failed.' }));
     }
@@ -267,8 +228,7 @@ function TeamsTab() {
   const handleRemoveMember = async (teamId, userId) => {
     try {
       await teamsApi.removeMember(teamId, userId);
-      const res = await teamsApi.getAll();
-      setTeams(res?.data || []);
+      await refreshTeams();
     } catch (err) {
       setMemberMsgs((p) => ({ ...p, [teamId]: err.message || 'Failed to remove.' }));
       setTimeout(() => setMemberMsgs((p) => ({ ...p, [teamId]: '' })), 3000);
@@ -281,10 +241,7 @@ function TeamsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900">Teams</h2>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
+        <button onClick={() => setShowForm(true)} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
           + New Team
         </button>
       </div>
@@ -298,33 +255,18 @@ function TeamsTab() {
           <form onSubmit={handleCreate} className="space-y-3">
             <div>
               <label className="label">Team name</label>
-              <input
-                className="input"
-                value={form.name}
-                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. Team Alpha"
-                required
-              />
+              <input className="input" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Team Alpha" required />
             </div>
             <div>
               <label className="label">Course</label>
-              <select
-                className="input"
-                value={form.course_id}
-                onChange={(e) => setForm((p) => ({ ...p, course_id: e.target.value }))}
-                required
-              >
+              <select className="input" value={form.course_id} onChange={(e) => setForm((p) => ({ ...p, course_id: e.target.value }))} required>
                 <option value="">Select course...</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-3">
-              <button type="submit" disabled={creating} className="btn-primary">
-                {creating ? 'Creating...' : 'Create'}
-              </button>
+              <button type="submit" disabled={creating} className="btn-primary">{creating ? 'Creating...' : 'Create'}</button>
               <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
             </div>
           </form>
@@ -340,7 +282,9 @@ function TeamsTab() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-slate-900">{team.name}</p>
-                  <p className="text-xs text-slate-400">Course ID: {team.course_id} · Team ID: {team.id}</p>
+                  <p className="text-xs text-slate-400">
+                    {courses.find((c) => c.id === team.course_id)?.name || `Course ID: ${team.course_id}`}
+                  </p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   {team.members?.length || 0} member{team.members?.length !== 1 ? 's' : ''}
@@ -351,11 +295,10 @@ function TeamsTab() {
                 <div className="space-y-2">
                   {team.members.map((m) => (
                     <div key={m.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
-                      <span className="text-sm text-slate-700">User ID: {m.user_id}</span>
-                      <button
-                        onClick={() => handleRemoveMember(team.id, m.user_id)}
-                        className="text-xs text-red-500 hover:text-red-700"
-                      >
+                      <span className="text-sm text-slate-700">
+                        {usersMap[m.user_id] || `User #${m.user_id}`}
+                      </span>
+                      <button onClick={() => handleRemoveMember(team.id, m.user_id)} className="text-xs text-red-500 hover:text-red-700">
                         Remove
                       </button>
                     </div>
@@ -371,10 +314,7 @@ function TeamsTab() {
                   onChange={(e) => setMemberInputs((p) => ({ ...p, [team.id]: e.target.value }))}
                   type="number"
                 />
-                <button
-                  onClick={() => handleAddMember(team.id)}
-                  className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                >
+                <button onClick={() => handleAddMember(team.id)} className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">
                   Add member
                 </button>
                 {memberMsgs[team.id] && (
@@ -393,6 +333,7 @@ function TeamsTab() {
 
 function SubmissionsTab() {
   const [scores, setScores] = useState([]);
+  const [usersMap, setUsersMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [reviewingId, setReviewingId] = useState(null);
   const [reviewForm, setReviewForm] = useState({ instructor_score: '', feedback: '' });
@@ -400,8 +341,13 @@ function SubmissionsTab() {
   const [msg, setMsg] = useState('');
 
   useEffect(() => {
-    scoringApi.getAllScores()
-      .then((res) => setScores(res?.data || []))
+    Promise.all([scoringApi.getAllScores(), api.get('/users/')])
+      .then(([sRes, uRes]) => {
+        setScores(sRes?.data || []);
+        const map = {};
+        (uRes?.data || []).forEach((u) => { map[u.id] = u.full_name; });
+        setUsersMap(map);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -438,6 +384,8 @@ function SubmissionsTab() {
 
   const ScoreRow = ({ score }) => {
     const isReviewing = reviewingId === score.id;
+    const studentName = usersMap[score.user_id] || `User #${score.user_id}`;
+
     return (
       <div className="card space-y-3">
         <div className="flex items-start justify-between gap-4">
@@ -445,11 +393,10 @@ function SubmissionsTab() {
             <p className="font-semibold text-slate-900">
               {SUBMISSION_TYPE_LABELS[score.submission_type] || score.submission_type}
             </p>
-            <p className="text-xs text-slate-400">
-              User ID: {score.user_id} · Course ID: {score.course_id} · Score ID: {score.id}
-            </p>
+            <p className="text-sm text-slate-600">{studentName}</p>
+            <p className="text-xs text-slate-400">Course ID: {score.course_id}</p>
           </div>
-          <div className="text-right">
+          <div className="text-right shrink-0">
             {score.instructor_score !== null && score.instructor_score !== undefined ? (
               <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
                 Scored: {score.instructor_score}
@@ -477,7 +424,7 @@ function SubmissionsTab() {
             }}
             className="btn-secondary text-sm"
           >
-            {score.instructor_score !== null ? 'Edit Review' : 'Review'}
+            {score.instructor_score !== null && score.instructor_score !== undefined ? 'Edit Review' : 'Review'}
           </button>
         ) : (
           <div className="space-y-3 rounded-xl bg-slate-50 p-3">
@@ -505,19 +452,10 @@ function SubmissionsTab() {
               </div>
             </div>
             <div className="flex gap-3">
-              <button
-                onClick={() => handleReview(score.id)}
-                disabled={submitting || !reviewForm.instructor_score}
-                className="btn-primary disabled:opacity-50"
-              >
+              <button onClick={() => handleReview(score.id)} disabled={submitting || !reviewForm.instructor_score} className="btn-primary disabled:opacity-50">
                 {submitting ? 'Submitting...' : 'Submit Review'}
               </button>
-              <button
-                onClick={() => setReviewingId(null)}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
+              <button onClick={() => setReviewingId(null)} className="btn-secondary">Cancel</button>
             </div>
           </div>
         )}
@@ -528,15 +466,13 @@ function SubmissionsTab() {
   return (
     <div className="space-y-6">
       {msg && (
-        <div className={`rounded-xl px-4 py-2 text-sm font-medium ${msg.includes('fail') ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+        <div className={`rounded-xl px-4 py-2 text-sm font-medium ${msg.includes('fail') || msg.includes('Failed') ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
           {msg}
         </div>
       )}
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">
-          Pending Review ({pending.length})
-        </h2>
+        <h2 className="mb-3 text-lg font-semibold text-slate-900">Pending Review ({pending.length})</h2>
         {pending.length === 0 ? (
           <p className="text-sm text-slate-500">All submissions have been reviewed.</p>
         ) : (
@@ -548,9 +484,7 @@ function SubmissionsTab() {
 
       {reviewed.length > 0 && (
         <div>
-          <h2 className="mb-3 text-lg font-semibold text-slate-900">
-            Reviewed ({reviewed.length})
-          </h2>
+          <h2 className="mb-3 text-lg font-semibold text-slate-900">Reviewed ({reviewed.length})</h2>
           <div className="space-y-3">
             {reviewed.map((s) => <ScoreRow key={s.id} score={s} />)}
           </div>
