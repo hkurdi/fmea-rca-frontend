@@ -87,7 +87,7 @@ export default function DashboardPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Role" value={user?.role || '—'} hint="Your platform access level" />
+        <StatCard label="Role" value={user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || '—'} hint="Your platform access level" />
         <StatCard
           label="Total Points"
           value={loading ? '...' : totalPoints}

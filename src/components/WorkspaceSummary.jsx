@@ -11,7 +11,7 @@ const POINT_LABELS = {
   rcaPip: "RCA PIP",
 };
 
-export default function WorkspaceSummary({ workspace }) {
+export default function WorkspaceSummary({ workspace, isLocked = {} }) {
   const hazardTotal = workspace.hazardAnalysis.reduce(
     (sum, row) => sum + calculateRpn(row),
     0
@@ -19,12 +19,19 @@ export default function WorkspaceSummary({ workspace }) {
 
   const earnedPoints = calculateEarnedPoints(workspace);
 
+  const sections = [
+    { label: "Process Map",      key: "processMap" },
+    { label: "Hazard Analysis",  key: "hazardAnalysis" },
+    { label: "FMEA PIP",         key: "fmeaPip" },
+    { label: "Fishbone Diagram", key: "fishbone" },
+    { label: "5 Whys",           key: "fiveWhys" },
+    { label: "RCA PIP",          key: "rcaPip" },
+  ];
+
   return (
     <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
       <div className="card space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900">
-          Submission Preview
-        </h3>
+        <h3 className="text-lg font-semibold text-slate-900">Submission Preview</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Process map sections</p>
@@ -34,9 +41,7 @@ export default function WorkspaceSummary({ workspace }) {
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Hazard total RPN</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
-              {hazardTotal}
-            </p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{hazardTotal}</p>
           </div>
         </div>
 
@@ -46,41 +51,35 @@ export default function WorkspaceSummary({ workspace }) {
             <span>Status</span>
           </div>
 
-          {[
-            ["Process Map", workspace.processMap.sections.some((item) => item.title.trim())],
-            ["Hazard Analysis", workspace.hazardAnalysis.some((row) => row.failureMode.trim())],
-            ["FMEA PIP", workspace.fmeaPip.problem.trim()],
-            ["Fishbone Diagram", workspace.fishbone.problemStatement.trim()],
-            ["5 Whys", workspace.fiveWhys.problem.trim()],
-            ["RCA PIP", workspace.rcaPip.problem.trim()],
-          ].map(([label, ready], index, arr) => (
-            <div
-              key={label}
-              className={`grid grid-cols-2 items-center px-6 py-5 text-base ${
-                index !== arr.length - 1 ? "border-b border-slate-100" : ""
-              }`}
-            >
-              <span className="font-medium text-slate-700">{label}</span>
-              <span>
-                <span
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
-                    ready
-                      ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                      : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
-                  }`}
-                >
-                  {ready ? "Completed" : "Not started"}
+          {sections.map(({ label, key }, index, arr) => {
+            const submitted = !!isLocked[key];
+            return (
+              <div
+                key={key}
+                className={`grid grid-cols-2 items-center px-6 py-5 text-base ${
+                  index !== arr.length - 1 ? "border-b border-slate-100" : ""
+                }`}
+              >
+                <span className="font-medium text-slate-700">{label}</span>
+                <span>
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
+                      submitted
+                        ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                        : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                    }`}
+                  >
+                    {submitted ? "Submitted" : "Not submitted"}
+                  </span>
                 </span>
-              </span>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div className="card">
-        <h3 className="text-lg font-semibold text-slate-900">
-          Gamification Preview
-        </h3>
+        <h3 className="text-lg font-semibold text-slate-900">Gamification Preview</h3>
         <p className="mt-1 text-sm text-slate-600">
           Points awarded upon submission of each section.
         </p>
@@ -90,9 +89,7 @@ export default function WorkspaceSummary({ workspace }) {
               key={key}
               className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm"
             >
-              <span className="font-medium text-slate-700">
-                {POINT_LABELS[key] || key}
-              </span>
+              <span className="font-medium text-slate-700">{POINT_LABELS[key] || key}</span>
               <span className="font-semibold text-slate-900">{value} pts</span>
             </div>
           ))}
