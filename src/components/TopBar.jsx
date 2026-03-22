@@ -10,9 +10,12 @@ export default function TopBar() {
     navigate('/login');
   };
 
+  const isInstructor = user?.role === 'instructor' || user?.role === 'admin';
+
   const links = [
     { to: '/', label: 'Dashboard' },
     { to: '/cases', label: 'Cases' },
+    ...(isInstructor ? [{ to: '/instructor', label: 'Instructor' }] : []),
   ];
 
   return (
@@ -47,7 +50,9 @@ export default function TopBar() {
             <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-slate-800">{user.full_name}</p>
-                <p className="text-xs capitalize text-slate-500">{user.role}</p>
+                <p className="text-xs text-slate-500">
+                  {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
+                </p>
               </div>
               <button
                 onClick={handleLogout}

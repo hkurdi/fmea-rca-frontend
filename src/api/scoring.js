@@ -14,4 +14,6 @@ export const scoringApi = {
   submitRcaPip: (submissionId, courseId) =>
     api.post(`/scoring/submit/rca-pip/${submissionId}?course_id=${courseId}`),
   getUserScores: (userId) => api.get(`/scoring/user/${userId}`),
+  getAllScores: () => api.get('/scoring/'),
+  reviewScore: (scoreId, data) => api.patch(`/scoring/${scoreId}/review`, data),
 };

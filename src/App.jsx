@@ -9,6 +9,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import CasesPage from './pages/CasesPage';
 import CaseWorkspacePage from './pages/CaseWorkspacePage';
+import InstructorPage from './pages/InstructorPage';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
                   <Route path="/" element={<DashboardPage />} />
                   <Route path="/cases" element={<CasesPage />} />
                   <Route path="/cases/:caseId" element={<CaseWorkspacePage />} />
+                  <Route path="/instructor" element={<InstructorPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AppLayout>
