@@ -30,6 +30,8 @@ export const casesApi = {
     api.post(`/cases/${caseId}/rca/fishbone`, { case_id: caseId, problem_statement }),
   updateFishbone: (caseId, problem_statement) =>
     api.put(`/cases/${caseId}/rca/fishbone`, { problem_statement }),
+  addFishboneNode: (caseId, fishboneId, nodeData) =>
+    api.post(`/cases/${caseId}/rca/fishbone/${fishboneId}/nodes`, nodeData),
 
   getFiveWhys: (caseId) => api.get(`/cases/${caseId}/rca/five-whys`),
   createFiveWhys: (caseId, problem, iterations) =>
@@ -42,4 +44,6 @@ export const casesApi = {
     api.post(`/cases/${caseId}/rca/pip`, { case_id: caseId, content }),
   updateRcaPip: (caseId, id, content) =>
     api.put(`/cases/${caseId}/rca/pip/${id}`, { content }),
+  
+  getCaseProgress: (caseId) => api.get(`/cases/${caseId}/progress`),
 };

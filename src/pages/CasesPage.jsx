@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 export default function CasesPage() {
   const { user } = useAuth();
   const [cases, setCases] = useState([]);
+  const [progressMap, setProgressMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({ title: '', description: '', mode: 'exercise' });
@@ -16,11 +17,27 @@ export default function CasesPage() {
   const isInstructor = user?.role === 'instructor' || user?.role === 'admin';
 
   useEffect(() => {
-    casesApi
-      .getAll()
-      .then((res) => setCases(res?.data || []))
-      .catch(() => setCases([]))
-      .finally(() => setLoading(false));
+    async function load() {
+      try {
+        const res = await casesApi.getAll();
+        const fetchedCases = res?.data || [];
+        setCases(fetchedCases);
+
+        const map = {};
+        await Promise.all(
+          fetchedCases.map(async (c) => {
+            const prog = await casesApi.getCaseProgress(c.id).catch(() => null);
+            map[c.id] = prog?.data?.percent ?? 0;
+          })
+        );
+        setProgressMap(map);
+      } catch {
+        setCases([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
   }, []);
 
   const handleChange = (e) => {
@@ -41,7 +58,10 @@ export default function CasesPage() {
         mode: formData.mode,
         allow_resubmit: formData.mode === 'exercise',
       });
-      if (res?.data) setCases((prev) => [res.data, ...prev]);
+      if (res?.data) {
+        setCases((prev) => [res.data, ...prev]);
+        setProgressMap((prev) => ({ ...prev, [res.data.id]: 0 }));
+      }
       setFormData({ title: '', description: '', mode: 'exercise' });
       setShowCreateForm(false);
     } catch (err) {
@@ -145,7 +165,7 @@ export default function CasesPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {cases.map((item) => (
-            <CaseCard key={item.id} item={item} progress={0} />
+            <CaseCard key={item.id} item={item} progress={progressMap[item.id] ?? 0} />
           ))}
         </div>
       )}

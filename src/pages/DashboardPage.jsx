@@ -11,8 +11,9 @@ import { scoringApi } from '../api/scoring';
 const TOTAL_SECTIONS = 6;
 
 export default function DashboardPage() {
-  const { user, courseId } = useAuth();
+  const { user, courses, courseId, setCourseId } = useAuth();
   const [cases, setCases] = useState([]);
+  const [progressMap, setProgressMap] = useState({});
   const [totalPoints, setTotalPoints] = useState(0);
   const [badgeCount, setBadgeCount] = useState(0);
   const [submissionCount, setSubmissionCount] = useState(0);
@@ -25,10 +26,18 @@ export default function DashboardPage() {
         const fetchedCases = casesRes?.data || [];
         setCases(fetchedCases);
 
+        const map = {};
+        await Promise.all(
+          fetchedCases.map(async (c) => {
+            const prog = await casesApi.getCaseProgress(c.id).catch(() => null);
+            map[c.id] = prog?.data?.percent ?? 0;
+          })
+        );
+        setProgressMap(map);
+
         if (courseId) {
           const pointsRes = await gamificationApi.getMyPoints(courseId).catch(() => null);
           const badgesRes = await gamificationApi.getMyBadges().catch(() => null);
-
           const pts = pointsRes?.data || [];
           setTotalPoints(pts.reduce((sum, p) => sum + (p.amount || 0), 0));
           setBadgeCount((badgesRes?.data || []).length);
@@ -61,12 +70,28 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {courses.length > 1 && (
+        <div className="card">
+          <label className="label">Active course</label>
+          <select
+            className="input max-w-sm"
+            value={courseId || ''}
+            onChange={(e) => setCourseId(Number(e.target.value))}
+          >
+            <option value="" disabled>Select a course</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Role" value={user?.role || '—'} hint="Your platform access level" />
         <StatCard
           label="Total Points"
           value={loading ? '...' : totalPoints}
-          hint={courseId ? 'Points earned this course' : 'No course assigned yet'}
+          hint={courseId ? 'Points earned this course' : 'No course selected'}
         />
         <StatCard
           label="Sections Submitted"
@@ -83,11 +108,14 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {!courseId && courses.length === 0 && (
+        <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          No courses available yet. Ask your instructor to create a course before submitting sections.
+        </div>
+      )}
+
       <div>
-        <SectionTitle
-          title="Active Cases"
-          subtitle="Open a case to track your progress."
-        />
+        <SectionTitle title="Active Cases" subtitle="Open a case to track your progress." />
         {loading ? (
           <p className="text-sm text-slate-500">Loading cases...</p>
         ) : cases.length === 0 ? (
@@ -95,11 +123,7 @@ export default function DashboardPage() {
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {cases.map((item) => (
-              <CaseCard
-                key={item.id}
-                item={item}
-                progress={Math.round((submissionCount / Math.max(cases.length * TOTAL_SECTIONS, 1)) * 100)}
-              />
+              <CaseCard key={item.id} item={item} progress={progressMap[item.id] ?? 0} />
             ))}
           </div>
         )}

@@ -2,6 +2,15 @@ import { rubricPoints } from "../data/mockData";
 import { calculateRpn } from "../utils/helpers";
 import { calculateEarnedPoints } from "../utils/calculatePoints";
 
+const POINT_LABELS = {
+  processMap: "Process Map",
+  hazardAnalysis: "Hazard Analysis",
+  fishbone: "Fishbone Diagram",
+  fiveWhys: "5 Whys",
+  fmeaPip: "FMEA PIP",
+  rcaPip: "RCA PIP",
+};
+
 export default function WorkspaceSummary({ workspace }) {
   const hazardTotal = workspace.hazardAnalysis.reduce(
     (sum, row) => sum + calculateRpn(row),
@@ -38,16 +47,10 @@ export default function WorkspaceSummary({ workspace }) {
           </div>
 
           {[
-            [
-              "Process map",
-              workspace.processMap.sections.some((item) => item.title.trim()),
-            ],
-            [
-              "Hazard analysis",
-              workspace.hazardAnalysis.some((row) => row.failureMode.trim()),
-            ],
+            ["Process Map", workspace.processMap.sections.some((item) => item.title.trim())],
+            ["Hazard Analysis", workspace.hazardAnalysis.some((row) => row.failureMode.trim())],
             ["FMEA PIP", workspace.fmeaPip.problem.trim()],
-            ["Fishbone", workspace.fishbone.problemStatement.trim()],
+            ["Fishbone Diagram", workspace.fishbone.problemStatement.trim()],
             ["5 Whys", workspace.fiveWhys.problem.trim()],
             ["RCA PIP", workspace.rcaPip.problem.trim()],
           ].map(([label, ready], index, arr) => (
@@ -58,7 +61,6 @@ export default function WorkspaceSummary({ workspace }) {
               }`}
             >
               <span className="font-medium text-slate-700">{label}</span>
-
               <span>
                 <span
                   className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
@@ -80,7 +82,7 @@ export default function WorkspaceSummary({ workspace }) {
           Gamification Preview
         </h3>
         <p className="mt-1 text-sm text-slate-600">
-          Points mirror the backend README weights for each submission type.
+          Points awarded upon submission of each section.
         </p>
         <div className="mt-4 space-y-3">
           {Object.entries(rubricPoints).map(([key, value]) => (
@@ -88,8 +90,10 @@ export default function WorkspaceSummary({ workspace }) {
               key={key}
               className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm"
             >
-              <span className="font-medium text-slate-700">{key}</span>
-              <span className="font-semibold text-slate-900">{value}</span>
+              <span className="font-medium text-slate-700">
+                {POINT_LABELS[key] || key}
+              </span>
+              <span className="font-semibold text-slate-900">{value} pts</span>
             </div>
           ))}
         </div>

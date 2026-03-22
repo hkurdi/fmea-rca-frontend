@@ -11,6 +11,7 @@ import WorkspaceSummary from '../components/WorkspaceSummary';
 import { useWorkspace } from '../hooks/useWorkspace';
 import { useAuth } from '../context/AuthContext';
 import { casesApi } from '../api/cases';
+import { isSectionReady, SECTION_HINTS } from '../utils/sectionValidation';
 
 const tabItems = [
   { key: 'overview', label: 'Overview' },
@@ -34,12 +35,68 @@ const SECTION_LABELS = {
   rcaPip: 'RCA PIP',
 };
 
-function SectionActions({ sectionKey, saveStatus, isLocked, onSave, onSubmit }) {
-  const locked = isLocked[sectionKey];
-  const status = saveStatus[sectionKey];
+const formatKey = (key) =>
+  key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+function renderValue(val) {
+  if (Array.isArray(val)) {
+    return (
+      <ul className="mt-1 list-disc list-inside space-y-1">
+        {val.map((item, i) => (
+          <li key={i} className="text-sm text-slate-600">{String(item)}</li>
+        ))}
+      </ul>
+    );
+  }
+  if (typeof val === 'object' && val !== null) {
+    return (
+      <div className="mt-2 rounded-xl bg-slate-50 p-3 space-y-2">
+        {Object.entries(val).map(([k, v]) => (
+          <div key={k}>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+              {formatKey(k)}
+            </p>
+            <p className="text-sm text-slate-700">{String(v)}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return <p className="mt-1 text-sm text-slate-700">{String(val)}</p>;
+}
+
+function PatientInfoCard({ info }) {
+  if (!info || Object.keys(info).length === 0) {
+    return <p className="mt-3 text-sm text-slate-500">No patient info provided.</p>;
+  }
+
+  const sorted = Object.entries(info).sort(([, a], [, b]) => {
+    const rank = (v) => (Array.isArray(v) ? 1 : typeof v === 'object' && v !== null ? 2 : 0);
+    return rank(a) - rank(b);
+  });
 
   return (
-    <div className="flex items-center gap-3 mt-2 mb-4">
+    <div className="mt-3 space-y-4">
+      {sorted.map(([key, val]) => (
+        <div key={key}>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            {formatKey(key)}
+          </p>
+          {renderValue(val)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SectionActions({ sectionKey, saveStatus, isLocked, workspace, onSave, onSubmit }) {
+  const locked = isLocked[sectionKey];
+  const status = saveStatus[sectionKey];
+  const ready = isSectionReady(sectionKey, workspace);
+  const hint = SECTION_HINTS[sectionKey];
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 mt-2 mb-4">
       {locked ? (
         <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
           ✓ Submitted
@@ -55,8 +112,9 @@ function SectionActions({ sectionKey, saveStatus, isLocked, onSave, onSubmit }) 
           </button>
           <button
             onClick={() => onSubmit(sectionKey)}
-            disabled={status === 'saving'}
-            className="rounded-xl bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            disabled={status === 'saving' || !ready}
+            title={!ready ? hint : ''}
+            className="rounded-xl bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Submit for Scoring
           </button>
@@ -65,6 +123,9 @@ function SectionActions({ sectionKey, saveStatus, isLocked, onSave, onSubmit }) 
           )}
           {status === 'error' && (
             <span className="text-xs text-red-600 font-medium">Save failed</span>
+          )}
+          {!ready && (
+            <span className="text-xs text-amber-600 font-medium">{hint}</span>
           )}
         </>
       )}
@@ -146,18 +207,7 @@ export default function CaseWorkspacePage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="card">
               <h3 className="text-lg font-semibold">Patient Information</h3>
-              {caseItem.patient_info && Object.keys(caseItem.patient_info).length > 0 ? (
-                <div className="mt-3 space-y-2 text-sm text-slate-600">
-                  {Object.entries(caseItem.patient_info).map(([key, val]) => (
-                    <div key={key}>
-                      <span className="font-medium capitalize text-slate-700">{key}:</span>{' '}
-                      {typeof val === 'string' ? val : JSON.stringify(val)}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-slate-500">No patient info provided.</p>
-              )}
+              <PatientInfoCard info={caseItem.patient_info} />
             </div>
             <div className="card">
               <h3 className="text-lg font-semibold">Deliverables</h3>
@@ -183,7 +233,7 @@ export default function CaseWorkspacePage() {
       case 'processMap':
         return (
           <>
-            <SectionActions sectionKey="processMap" saveStatus={saveStatus} isLocked={isLocked} onSave={handleSave} onSubmit={handleSubmit} />
+            <SectionActions sectionKey="processMap" saveStatus={saveStatus} isLocked={isLocked} workspace={workspace} onSave={handleSave} onSubmit={handleSubmit} />
             <ProcessMapEditor value={workspace.processMap} onChange={(next) => updateSection('processMap', next)} readOnly={isLocked.processMap} />
           </>
         );
@@ -191,7 +241,7 @@ export default function CaseWorkspacePage() {
       case 'hazardAnalysis':
         return (
           <>
-            <SectionActions sectionKey="hazardAnalysis" saveStatus={saveStatus} isLocked={isLocked} onSave={handleSave} onSubmit={handleSubmit} />
+            <SectionActions sectionKey="hazardAnalysis" saveStatus={saveStatus} isLocked={isLocked} workspace={workspace} onSave={handleSave} onSubmit={handleSubmit} />
             <HazardAnalysisTable rows={workspace.hazardAnalysis} onChange={(next) => updateSection('hazardAnalysis', next)} readOnly={isLocked.hazardAnalysis} />
           </>
         );
@@ -199,7 +249,7 @@ export default function CaseWorkspacePage() {
       case 'fmeaPip':
         return (
           <>
-            <SectionActions sectionKey="fmeaPip" saveStatus={saveStatus} isLocked={isLocked} onSave={handleSave} onSubmit={handleSubmit} />
+            <SectionActions sectionKey="fmeaPip" saveStatus={saveStatus} isLocked={isLocked} workspace={workspace} onSave={handleSave} onSubmit={handleSubmit} />
             <PipForm title="FMEA Performance Improvement Plan" value={workspace.fmeaPip} onChange={(next) => updateSection('fmeaPip', next)} includeRationale readOnly={isLocked.fmeaPip} />
           </>
         );
@@ -207,7 +257,7 @@ export default function CaseWorkspacePage() {
       case 'fishbone':
         return (
           <>
-            <SectionActions sectionKey="fishbone" saveStatus={saveStatus} isLocked={isLocked} onSave={handleSave} onSubmit={handleSubmit} />
+            <SectionActions sectionKey="fishbone" saveStatus={saveStatus} isLocked={isLocked} workspace={workspace} onSave={handleSave} onSubmit={handleSubmit} />
             <FishboneEditor value={workspace.fishbone} onChange={(next) => updateSection('fishbone', next)} readOnly={isLocked.fishbone} />
           </>
         );
@@ -215,7 +265,7 @@ export default function CaseWorkspacePage() {
       case 'fiveWhys':
         return (
           <>
-            <SectionActions sectionKey="fiveWhys" saveStatus={saveStatus} isLocked={isLocked} onSave={handleSave} onSubmit={handleSubmit} />
+            <SectionActions sectionKey="fiveWhys" saveStatus={saveStatus} isLocked={isLocked} workspace={workspace} onSave={handleSave} onSubmit={handleSubmit} />
             <FiveWhysEditor value={workspace.fiveWhys} onChange={(next) => updateSection('fiveWhys', next)} readOnly={isLocked.fiveWhys} />
           </>
         );
@@ -223,13 +273,13 @@ export default function CaseWorkspacePage() {
       case 'rcaPip':
         return (
           <>
-            <SectionActions sectionKey="rcaPip" saveStatus={saveStatus} isLocked={isLocked} onSave={handleSave} onSubmit={handleSubmit} />
+            <SectionActions sectionKey="rcaPip" saveStatus={saveStatus} isLocked={isLocked} workspace={workspace} onSave={handleSave} onSubmit={handleSubmit} />
             <PipForm title="RCA Performance Improvement Plan" value={workspace.rcaPip} onChange={(next) => updateSection('rcaPip', next)} readOnly={isLocked.rcaPip} />
           </>
         );
 
       case 'summary':
-        return <WorkspaceSummary workspace={workspace} />;
+        return <WorkspaceSummary workspace={workspace} isLocked={isLocked} />;
 
       default:
         return null;

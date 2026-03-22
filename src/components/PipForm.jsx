@@ -1,5 +1,8 @@
-export default function PipForm({ title, value, onChange, includeRationale = false }) {
-  const setField = (field, fieldValue) => onChange({ ...value, [field]: fieldValue });
+export default function PipForm({ title, value, onChange, includeRationale = false, readOnly }) {
+  const setField = (field, fieldValue) => {
+    if (readOnly) return;
+    onChange({ ...value, [field]: fieldValue });
+  };
 
   return (
     <div className="card space-y-4">
@@ -8,39 +11,74 @@ export default function PipForm({ title, value, onChange, includeRationale = fal
         <p className="mt-1 text-sm text-slate-600">
           Covers the rubric items: single problem, improvement idea, resources, timeline, and success measure.
         </p>
+        {readOnly && (
+          <p className="mt-2 text-xs font-medium text-emerald-600">
+            This section has been submitted and is locked.
+          </p>
+        )}
       </div>
 
       <div>
         <label className="label">Single problem addressed</label>
-        <input className="input" value={value.problem} onChange={(e) => setField('problem', e.target.value)} />
+        <input
+          className="input"
+          value={value.problem}
+          onChange={(e) => setField('problem', e.target.value)}
+          disabled={readOnly}
+        />
       </div>
 
-      {includeRationale ? (
+      {includeRationale && (
         <div>
           <label className="label">Detailed rationale</label>
-          <textarea className="input min-h-24" value={value.rationale} onChange={(e) => setField('rationale', e.target.value)} />
+          <textarea
+            className="input min-h-24"
+            value={value.rationale}
+            onChange={(e) => setField('rationale', e.target.value)}
+            disabled={readOnly}
+          />
         </div>
-      ) : null}
+      )}
 
       <div>
         <label className="label">Improvement plan</label>
-        <textarea className="input min-h-24" value={value.plan} onChange={(e) => setField('plan', e.target.value)} />
+        <textarea
+          className="input min-h-24"
+          value={value.plan}
+          onChange={(e) => setField('plan', e.target.value)}
+          disabled={readOnly}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="label">Resources needed</label>
-          <textarea className="input min-h-24" value={value.resources} onChange={(e) => setField('resources', e.target.value)} />
+          <textarea
+            className="input min-h-24"
+            value={value.resources}
+            onChange={(e) => setField('resources', e.target.value)}
+            disabled={readOnly}
+          />
         </div>
         <div>
           <label className="label">Timeline</label>
-          <textarea className="input min-h-24" value={value.timeline} onChange={(e) => setField('timeline', e.target.value)} />
+          <textarea
+            className="input min-h-24"
+            value={value.timeline}
+            onChange={(e) => setField('timeline', e.target.value)}
+            disabled={readOnly}
+          />
         </div>
       </div>
 
       <div>
         <label className="label">Measure of success</label>
-        <textarea className="input min-h-24" value={value.successMeasure} onChange={(e) => setField('successMeasure', e.target.value)} />
+        <textarea
+          className="input min-h-24"
+          value={value.successMeasure}
+          onChange={(e) => setField('successMeasure', e.target.value)}
+          disabled={readOnly}
+        />
       </div>
     </div>
   );

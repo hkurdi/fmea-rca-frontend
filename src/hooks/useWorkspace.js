@@ -42,17 +42,120 @@ function fiveWhysFromApi(data) {
   return { problem: data.problem || '', iterations };
 }
 
-const FISHBONE_TREE_KEY = (caseId) => `fishbone_tree_${caseId}`;
+function nodesFromApi(nodes) {
+  if (!nodes || nodes.length === 0) return null;
 
-function saveFishboneTreeLocally(caseId, majorCauses) {
-  try { localStorage.setItem(FISHBONE_TREE_KEY(caseId), JSON.stringify(majorCauses)); } catch {}
+  const byBackendId = {};
+  nodes.forEach((n) => {
+    byBackendId[n.id] = {
+      id: crypto.randomUUID(),
+      backendId: n.id,
+      label: n.label,
+      _level: n.level,
+      _parentBackendId: n.parent_id,
+      order_index: n.order_index,
+      primaryCauses: [],
+      secondaryCauses: [],
+      tertiaryCauses: [],
+    };
+  });
+
+  const majors = [];
+  const primaries = [];
+  const secondaries = [];
+  const tertiaries = [];
+
+  Object.values(byBackendId).forEach((node) => {
+    if (node._level === 'major') majors.push(node);
+    else if (node._level === 'primary') primaries.push(node);
+    else if (node._level === 'secondary') secondaries.push(node);
+    else if (node._level === 'tertiary') tertiaries.push(node);
+  });
+
+  tertiaries.forEach((t) => {
+    const parent = byBackendId[t._parentBackendId];
+    if (parent) parent.tertiaryCauses.push(t);
+  });
+
+  secondaries.forEach((s) => {
+    const parent = byBackendId[s._parentBackendId];
+    if (parent) parent.secondaryCauses.push(s);
+  });
+
+  primaries.forEach((p) => {
+    const parent = byBackendId[p._parentBackendId];
+    if (parent) parent.primaryCauses.push(p);
+  });
+
+  const sort = (arr) => [...arr].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+
+  return sort(majors).map((m) => ({
+    ...m,
+    primaryCauses: sort(m.primaryCauses).map((p) => ({
+      ...p,
+      secondaryCauses: sort(p.secondaryCauses).map((s) => ({
+        ...s,
+        tertiaryCauses: sort(s.tertiaryCauses),
+      })),
+    })),
+  }));
 }
 
-function loadFishboneTreeLocally(caseId) {
-  try {
-    const raw = localStorage.getItem(FISHBONE_TREE_KEY(caseId));
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+async function syncFishboneNodes(caseId, fishboneId, majorCauses) {
+  const updated = JSON.parse(JSON.stringify(majorCauses));
+
+  for (let mIdx = 0; mIdx < updated.length; mIdx++) {
+    const major = updated[mIdx];
+    if (!major.backendId) {
+      const res = await casesApi.addFishboneNode(caseId, fishboneId, {
+        label: major.label,
+        level: 'major',
+        order_index: mIdx,
+      });
+      major.backendId = res.data.id;
+    }
+
+    for (let pIdx = 0; pIdx < (major.primaryCauses || []).length; pIdx++) {
+      const primary = major.primaryCauses[pIdx];
+      if (!primary.backendId) {
+        const res = await casesApi.addFishboneNode(caseId, fishboneId, {
+          label: primary.label,
+          level: 'primary',
+          parent_id: major.backendId,
+          order_index: pIdx,
+        });
+        primary.backendId = res.data.id;
+      }
+
+      for (let sIdx = 0; sIdx < (primary.secondaryCauses || []).length; sIdx++) {
+        const secondary = primary.secondaryCauses[sIdx];
+        if (!secondary.backendId) {
+          const res = await casesApi.addFishboneNode(caseId, fishboneId, {
+            label: secondary.label,
+            level: 'secondary',
+            parent_id: primary.backendId,
+            order_index: sIdx,
+          });
+          secondary.backendId = res.data.id;
+        }
+
+        for (let tIdx = 0; tIdx < (secondary.tertiaryCauses || []).length; tIdx++) {
+          const tertiary = secondary.tertiaryCauses[tIdx];
+          if (!tertiary.backendId) {
+            const res = await casesApi.addFishboneNode(caseId, fishboneId, {
+              label: tertiary.label,
+              level: 'tertiary',
+              parent_id: secondary.backendId,
+              order_index: tIdx,
+            });
+            tertiary.backendId = res.data.id;
+          }
+        }
+      }
+    }
+  }
+
+  return updated;
 }
 
 export function useWorkspace(caseId) {
@@ -61,7 +164,6 @@ export function useWorkspace(caseId) {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState({});
 
-  // useRef so saveSection always reads the latest ID without stale closures
   const submissionIdsRef = useRef({});
 
   const setSubmissionId = useCallback((type, id) => {
@@ -75,7 +177,6 @@ export function useWorkspace(caseId) {
     const newWorkspace = buildDefault();
     const newLocked = {};
 
-    // Each fetch returns null on 404 (not created yet) — that's fine, workspace starts blank
     await Promise.allSettled([
       casesApi.getProcessMap(caseId).then((res) => {
         if (!res) return;
@@ -86,7 +187,10 @@ export function useWorkspace(caseId) {
 
       casesApi.getHazardAnalysis(caseId).then((res) => {
         if (!res) return;
-        newWorkspace.hazardAnalysis = res.data.rows?.rows || defaultHazardRows;
+        const raw = res.data.rows;
+        newWorkspace.hazardAnalysis = Array.isArray(raw)
+          ? raw
+          : (raw?.rows || defaultHazardRows);
         setSubmissionId('hazardAnalysis', res.data.id);
         newLocked.hazardAnalysis = res.data.is_locked;
       }),
@@ -102,10 +206,10 @@ export function useWorkspace(caseId) {
         if (!res) return;
         setSubmissionId('fishbone', res.data.id);
         newLocked.fishbone = res.data.is_locked;
-        const savedTree = loadFishboneTreeLocally(caseId) || defaultFishbone.majorCauses;
+        const nodesTree = nodesFromApi(res.data.nodes);
         newWorkspace.fishbone = {
           problemStatement: res.data.problem_statement || '',
-          majorCauses: savedTree,
+          majorCauses: nodesTree || defaultFishbone.majorCauses,
         };
       }),
 
@@ -135,12 +239,8 @@ export function useWorkspace(caseId) {
 
   const updateSection = useCallback((type, value) => {
     setWorkspace((prev) => ({ ...prev, [type]: value }));
-    if (type === 'fishbone') {
-      saveFishboneTreeLocally(caseId, value.majorCauses);
-    }
-  }, [caseId]);
+  }, []);
 
-  // Returns the submission ID — either existing or newly created
   const saveSection = useCallback(async (type) => {
     const data = workspace[type];
     const existingId = submissionIdsRef.current[type];
@@ -164,9 +264,9 @@ export function useWorkspace(caseId) {
 
         case 'hazardAnalysis':
           if (existingId) {
-            res = await casesApi.updateHazardAnalysis(caseId, existingId, { rows: data });
+            res = await casesApi.updateHazardAnalysis(caseId, existingId, data);
           } else {
-            res = await casesApi.createHazardAnalysis(caseId, { rows: data });
+            res = await casesApi.createHazardAnalysis(caseId, data);
             finalId = res.data.id;
             setSubmissionId('hazardAnalysis', finalId);
           }
@@ -182,8 +282,7 @@ export function useWorkspace(caseId) {
           }
           break;
 
-        case 'fishbone':
-          saveFishboneTreeLocally(caseId, data.majorCauses);
+        case 'fishbone': {
           if (existingId) {
             res = await casesApi.updateFishbone(caseId, data.problemStatement);
           } else {
@@ -191,7 +290,13 @@ export function useWorkspace(caseId) {
             finalId = res.data.id;
             setSubmissionId('fishbone', finalId);
           }
+          const updatedMajorCauses = await syncFishboneNodes(caseId, finalId, data.majorCauses);
+          setWorkspace((prev) => ({
+            ...prev,
+            fishbone: { ...prev.fishbone, majorCauses: updatedMajorCauses },
+          }));
           break;
+        }
 
         case 'fiveWhys': {
           const { problem, iterations } = fiveWhysToApi(data);
@@ -227,7 +332,6 @@ export function useWorkspace(caseId) {
     }
   }, [workspace, caseId, setSubmissionId]);
 
-  // Saves first, uses returned ID directly — never reads stale state
   const submitSection = useCallback(async (type, courseId) => {
     if (!courseId) throw new Error('No course assigned. Ask your instructor to create a course.');
 
@@ -251,31 +355,22 @@ export function useWorkspace(caseId) {
   const resetWorkspace = useCallback(() => {
     const defaults = buildDefault();
 
-    // Clear submission IDs for all unlocked sections first (outside setState)
     Object.keys(defaults).forEach((key) => {
       if (!isLocked[key]) {
         delete submissionIdsRef.current[key];
       }
     });
 
-    // Clear fishbone tree from localStorage if fishbone isn't locked
-    if (!isLocked.fishbone) {
-      try { localStorage.removeItem(FISHBONE_TREE_KEY(caseId)); } catch {}
-    }
-
-    // Reset workspace state — locked sections keep their current values
     setWorkspace((prev) => {
       const next = { ...prev };
       Object.keys(defaults).forEach((key) => {
-        if (!isLocked[key]) {
-          next[key] = defaults[key];
-        }
+        if (!isLocked[key]) next[key] = defaults[key];
       });
       return next;
     });
 
     setSaveStatus({});
-  }, [caseId, isLocked]);
+  }, [isLocked]);
 
   return {
     workspace,

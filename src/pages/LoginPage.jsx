@@ -44,7 +44,15 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-slate-700">Password</label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-slate-500 hover:text-slate-900 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 type="password"
                 value={form.password}
@@ -55,7 +63,9 @@ export default function LoginPage() {
               />
             </div>
 
-            {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+            {error && (
+              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+            )}
 
             <button
               type="submit"

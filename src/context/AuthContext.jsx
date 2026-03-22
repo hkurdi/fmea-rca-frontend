@@ -6,15 +6,18 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [courses, setCourses] = useState([]);
   const [courseId, setCourseId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadCourseId = useCallback(async () => {
+  const loadCourses = useCallback(async () => {
     try {
       const res = await casesApi.getAllCourses();
-      const courses = res.data || [];
-      if (courses.length > 0) setCourseId(courses[0].id);
+      const fetched = res?.data || [];
+      setCourses(fetched);
+      if (fetched.length === 1) setCourseId(fetched[0].id);
     } catch {
+      setCourses([]);
     }
   }, []);
 
@@ -25,7 +28,7 @@ export function AuthProvider({ children }) {
         .me()
         .then((res) => {
           setUser(res.data);
-          return loadCourseId();
+          return loadCourses();
         })
         .catch(() => {
           localStorage.removeItem('access_token');
@@ -35,7 +38,7 @@ export function AuthProvider({ children }) {
     } else {
       setLoading(false);
     }
-  }, [loadCourseId]);
+  }, [loadCourses]);
 
   const login = useCallback(async (email, password) => {
     const res = await authApi.login(email, password);
@@ -43,9 +46,9 @@ export function AuthProvider({ children }) {
     localStorage.setItem('refresh_token', res.data.refresh_token);
     const me = await authApi.me();
     setUser(me.data);
-    await loadCourseId();
+    await loadCourses();
     return me.data;
-  }, [loadCourseId]);
+  }, [loadCourses]);
 
   const register = useCallback(async (data) => {
     await authApi.register(data);
@@ -56,11 +59,12 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     setUser(null);
+    setCourses([]);
     setCourseId(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, courseId, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, courses, courseId, setCourseId, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

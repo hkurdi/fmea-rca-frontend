@@ -1,5 +1,6 @@
-export default function ProcessMapEditor({ value, onChange }) {
+export default function ProcessMapEditor({ value, onChange, readOnly }) {
   const updateSection = (sectionId, field, nextValue) => {
+    if (readOnly) return;
     onChange({
       ...value,
       sections: value.sections.map((section) =>
@@ -9,6 +10,7 @@ export default function ProcessMapEditor({ value, onChange }) {
   };
 
   const updateTask = (sectionId, taskId, field, nextValue) => {
+    if (readOnly) return;
     onChange({
       ...value,
       sections: value.sections.map((section) =>
@@ -25,6 +27,7 @@ export default function ProcessMapEditor({ value, onChange }) {
   };
 
   const addSection = () => {
+    if (readOnly) return;
     onChange({
       ...value,
       sections: [
@@ -50,6 +53,7 @@ export default function ProcessMapEditor({ value, onChange }) {
   };
 
   const addTask = (sectionId) => {
+    if (readOnly) return;
     onChange({
       ...value,
       sections: value.sections.map((section) =>
@@ -79,15 +83,22 @@ export default function ProcessMapEditor({ value, onChange }) {
         <p className="mt-1 text-sm text-slate-600">
           Keep the structure simple: major processes, related subprocesses or tasks, what should happen, and risk or drift.
         </p>
+        {readOnly && (
+          <p className="mt-2 text-xs font-medium text-emerald-600">
+            This section has been submitted and is locked.
+          </p>
+        )}
       </div>
 
       {value.sections.map((section, index) => (
         <div key={section.id} className="card space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h4 className="text-base font-semibold text-slate-900">Major Process {index + 1}</h4>
-            <button type="button" className="btn-secondary" onClick={() => addTask(section.id)}>
-              Add task
-            </button>
+            {!readOnly && (
+              <button type="button" className="btn-secondary" onClick={() => addTask(section.id)}>
+                Add task
+              </button>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -98,6 +109,7 @@ export default function ProcessMapEditor({ value, onChange }) {
                 value={section.title}
                 onChange={(e) => updateSection(section.id, 'title', e.target.value)}
                 placeholder="Example: Collect medication history"
+                disabled={readOnly}
               />
             </div>
             <div>
@@ -107,6 +119,7 @@ export default function ProcessMapEditor({ value, onChange }) {
                 value={section.shouldHappen}
                 onChange={(e) => updateSection(section.id, 'shouldHappen', e.target.value)}
                 placeholder="Expected safe workflow"
+                disabled={readOnly}
               />
             </div>
           </div>
@@ -118,6 +131,7 @@ export default function ProcessMapEditor({ value, onChange }) {
               value={section.drift}
               onChange={(e) => updateSection(section.id, 'drift', e.target.value)}
               placeholder="What could go wrong in this step?"
+              disabled={readOnly}
             />
           </div>
 
@@ -132,6 +146,7 @@ export default function ProcessMapEditor({ value, onChange }) {
                     value={task.title}
                     onChange={(e) => updateTask(section.id, task.id, 'title', e.target.value)}
                     placeholder="Task name"
+                    disabled={readOnly}
                   />
                 </div>
                 <div>
@@ -141,6 +156,7 @@ export default function ProcessMapEditor({ value, onChange }) {
                     value={task.shouldHappen}
                     onChange={(e) => updateTask(section.id, task.id, 'shouldHappen', e.target.value)}
                     placeholder="Expected action"
+                    disabled={readOnly}
                   />
                 </div>
                 <div>
@@ -150,6 +166,7 @@ export default function ProcessMapEditor({ value, onChange }) {
                     value={task.drift}
                     onChange={(e) => updateTask(section.id, task.id, 'drift', e.target.value)}
                     placeholder="Potential failure"
+                    disabled={readOnly}
                   />
                 </div>
               </div>
@@ -158,9 +175,11 @@ export default function ProcessMapEditor({ value, onChange }) {
         </div>
       ))}
 
-      <button type="button" className="btn-primary" onClick={addSection}>
-        Add major process
-      </button>
+      {!readOnly && (
+        <button type="button" className="btn-primary" onClick={addSection}>
+          Add major process
+        </button>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-function CauseColumn({ title, items, onUpdate }) {
+function CauseColumn({ title, items, onUpdate, readOnly }) {
   return (
     <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
       <h4 className="text-base font-semibold text-slate-900">{title}</h4>
@@ -6,7 +6,12 @@ function CauseColumn({ title, items, onUpdate }) {
         <div key={item.id} className="space-y-3 rounded-xl bg-slate-50 p-3">
           <div>
             <label className="label">{title} {index + 1}</label>
-            <input className="input" value={item.label} onChange={(e) => onUpdate(item.id, 'label', e.target.value)} />
+            <input
+              className="input"
+              value={item.label}
+              onChange={(e) => onUpdate(item.id, 'label', e.target.value)}
+              disabled={readOnly}
+            />
           </div>
 
           {item.primaryCauses ? (
@@ -18,6 +23,7 @@ function CauseColumn({ title, items, onUpdate }) {
                     className="input"
                     value={primary.label}
                     onChange={(e) => onUpdate(item.id, 'primary', e.target.value, primary.id)}
+                    disabled={readOnly}
                   />
 
                   <div className="mt-3 grid gap-3 lg:grid-cols-2">
@@ -28,6 +34,7 @@ function CauseColumn({ title, items, onUpdate }) {
                           className="input"
                           value={secondary.label}
                           onChange={(e) => onUpdate(item.id, 'secondary', e.target.value, primary.id, secondary.id)}
+                          disabled={readOnly}
                         />
                         <div className="mt-3 space-y-2">
                           {secondary.tertiaryCauses.map((tertiary, tertiaryIndex) => (
@@ -39,6 +46,7 @@ function CauseColumn({ title, items, onUpdate }) {
                                 onChange={(e) =>
                                   onUpdate(item.id, 'tertiary', e.target.value, primary.id, secondary.id, tertiary.id)
                                 }
+                                disabled={readOnly}
                               />
                             </div>
                           ))}
@@ -56,8 +64,9 @@ function CauseColumn({ title, items, onUpdate }) {
   );
 }
 
-export default function FishboneEditor({ value, onChange }) {
+export default function FishboneEditor({ value, onChange, readOnly }) {
   const updateNested = (majorId, level, newValue, primaryId, secondaryId, tertiaryId) => {
+    if (readOnly) return;
     const next = {
       ...value,
       majorCauses: value.majorCauses.map((major) => {
@@ -85,7 +94,6 @@ export default function FishboneEditor({ value, onChange }) {
         };
       }),
     };
-
     onChange(next);
   };
 
@@ -94,21 +102,31 @@ export default function FishboneEditor({ value, onChange }) {
       <div className="card">
         <h3 className="text-lg font-semibold text-slate-900">Fishbone Diagram</h3>
         <p className="mt-1 text-sm text-slate-600">
-          This simple editor supports the rubric structure: one problem, five major causes, two primary causes each,
-          and deeper secondary and tertiary causes under one major branch.
+          One problem, five major causes, two primary causes each, and deeper secondary and tertiary causes under one major branch.
         </p>
+        {readOnly && (
+          <p className="mt-2 text-xs font-medium text-emerald-600">
+            This section has been submitted and is locked.
+          </p>
+        )}
         <div className="mt-4">
           <label className="label">Problem statement</label>
           <input
             className="input"
             value={value.problemStatement}
-            onChange={(e) => onChange({ ...value, problemStatement: e.target.value })}
+            onChange={(e) => !readOnly && onChange({ ...value, problemStatement: e.target.value })}
             placeholder="Clearly define the problem"
+            disabled={readOnly}
           />
         </div>
       </div>
 
-      <CauseColumn title="Major Cause" items={value.majorCauses} onUpdate={updateNested} />
+      <CauseColumn
+        title="Major Cause"
+        items={value.majorCauses}
+        onUpdate={updateNested}
+        readOnly={readOnly}
+      />
     </div>
   );
 }
