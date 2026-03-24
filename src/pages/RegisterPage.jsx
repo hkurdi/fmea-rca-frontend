@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import logo from '../logo/logo.png'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -49,11 +50,7 @@ export default function RegisterPage() {
           className="mb-8 text-center"
         >
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-gradient shadow-glow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
+                      <img src={logo} alt="logo" />
           </div>
           <h1 className="font-display text-2xl font-bold text-white">Create an account</h1>
           <p className="mt-1 text-sm text-slate-500">Join the FMEA &amp; RCA learning platform</p>

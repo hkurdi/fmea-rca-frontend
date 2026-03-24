@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import logo from '../logo/logo.png'
 
 function NavIcon({ path }) {
   const icons = {
@@ -57,11 +58,7 @@ export default function TopBar() {
           className="flex items-center gap-3"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-gradient shadow-glow-sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
+            <img src={logo} alt="logo" className="h-8 w-8 object-contain" />
           </div>
           <div className="hidden sm:block">
             <p className="font-display text-sm font-bold text-white leading-none">FMEA &amp; RCA</p>
