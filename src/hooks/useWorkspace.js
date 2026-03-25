@@ -263,10 +263,13 @@ export function useWorkspace(caseId) {
           break;
 
         case 'hazardAnalysis':
+          const payload = {
+            rows: data,
+          };
           if (existingId) {
-            res = await casesApi.updateHazardAnalysis(caseId, existingId, data);
+            res = await casesApi.updateHazardAnalysis(caseId, existingId, payload);
           } else {
-            res = await casesApi.createHazardAnalysis(caseId, data);
+            res = await casesApi.createHazardAnalysis(caseId, payload);
             finalId = res.data.id;
             setSubmissionId('hazardAnalysis', finalId);
           }
