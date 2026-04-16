@@ -13,7 +13,7 @@ html {
   background-color: #070d1a;
   color: #e2e8f0;
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 body {
@@ -21,7 +21,7 @@ body {
   min-width: 320px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 /* Prevent iOS zoom on input focus (font-size must be >= 16px on mobile) */
@@ -157,4 +157,254 @@ button, input, textarea, select {
 select option {
   background: #111d2e;
   color: #e2e8f0;
+}
+
+/* =========================
+   Fishbone Diagram Better Styling
+   ========================= */
+/* =========================
+   Fishbone Diagram Clean Layout
+   ========================= */
+
+   .fb-wrapper {
+    padding: 24px;
+    overflow-x: auto;
+  }
+  
+  .fb-canvas {
+    position: relative;
+    width: 2400px;
+    min-height: 1180px;
+    background: #f3f4f6;
+    border-radius: 28px;
+    padding: 32px;
+    overflow: visible;
+  }
+  
+  /* main spine */
+  .fb-spine {
+    position: absolute;
+    left: 420px;
+    right: 170px;
+    top: 50%;
+    height: 12px;
+    background: #97b84f;
+    border-radius: 999px;
+    transform: translateY(-50%);
+  }
+  
+  /* effect */
+  .fb-effect-arrow {
+    position: absolute;
+    right: 78px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 83px solid transparent;
+    border-bottom: 85px solid transparent;
+    border-left: 96px solid #97b84f;
+  }
+  
+  .fb-effect-text {
+    position: absolute;
+    right: 51px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #111827;
+    font-size: 28px;
+    font-weight: 700;
+    width: 120px;
+    text-align: left;
+  }
+  
+  /* branch container */
+  .fb-branch {
+    position: absolute;
+    width: 470px;
+    height: 430px;
+  }
+  
+  /* major cause box */
+  .fb-major-box {
+    position: absolute;
+    left: 24px;
+    width: 330px;
+    height: 92px;
+    background: #9cbb52;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+  }
+  
+  .fb-major-input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #fff;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    padding: 12px;
+  }
+  
+  .fb-major-input::placeholder {
+    color: rgba(255, 255, 255, 0.95);
+  }
+  
+  /* diagonal branch */
+  .fb-diagonal-line {
+    position: absolute;
+    width: 8px;
+    background: #9cbb52;
+    border-radius: 999px;
+    z-index: 1;
+  }
+  
+  .fb-branch-top .fb-major-box {
+    top: 0;
+  }
+  
+  .fb-branch-top .fb-diagonal-line {
+    left: 280px;
+    top: 92px;
+    height: 593px;
+    transform: rotate(-39deg);
+    transform-origin: top center;
+  }
+  
+  .fb-branch-bottom .fb-major-box {
+    bottom: 0;
+  }
+  
+  .fb-branch-bottom .fb-diagonal-line {
+    left: 282px;
+    bottom: 92px;
+    height: 593px;
+    transform: rotate(39deg);
+    transform-origin: bottom center;
+  }
+  
+  /* top row positions */
+  .fb-top-1 { left: 40px; top: 22px; }
+  .fb-top-2 { left: 585px; top: 22px; }
+  .fb-top-3 { left: 1150px; top: 22px; }
+  
+  /* bottom row positions */
+  .fb-bottom-1 { left: 40px; bottom: 22px; }
+  .fb-bottom-2 { left: 585px; bottom: 22px; }
+  .fb-bottom-3 { left: 1150px; bottom: 22px; }
+  
+  /* input row wrappers */
+  .fb-horizontal {
+    position: absolute;
+    width: 230px;
+    z-index: 2;
+  }
+  
+  /* green side line */
+  .fb-horizontal::before {
+    content: "";
+    position: absolute;
+    left: -82px;
+    top: 15px;
+    width: 76px;
+    height: 5px;
+    background: #97b84f;
+    border-radius: 999px;
+  }
+  
+  /* arrow head */
+  .fb-horizontal::after {
+    content: "";
+    position: absolute;
+    left: -18px;
+    top: 12px;
+    width: 12px;
+    height: 12px;
+    border-top: 4px solid #97b84f;
+    border-right: 4px solid #97b84f;
+    transform: rotate(45deg);
+  }
+  
+  /* TOP branches: spread clearly from upper-left to lower-right */
+  .fb-branch-top .fb-h1 { left: 54px;  top: 108px; }
+  .fb-branch-top .fb-h2 { left: 88px;  top: 164px; }
+  .fb-branch-top .fb-h3 { left: 124px; top: 220px; }
+  .fb-branch-top .fb-h4 { left: 152px; top: 276px; }
+  .fb-branch-top .fb-h5 { left: 188px; top: 332px; }
+  .fb-branch-top .fb-h6 { left: 220px; top: 388px; }
+  
+  /* BOTTOM branches: spread clearly from upper-right to lower-left */
+  .fb-branch-bottom .fb-h1 { left: 220px; top: 6px; }
+  .fb-branch-bottom .fb-h2 { left: 188px; top: 62px; }
+  .fb-branch-bottom .fb-h3 { left: 152px; top: 118px; }
+  .fb-branch-bottom .fb-h4 { left: 124px; top: 174px; }
+  .fb-branch-bottom .fb-h5 { left: 88px;  top: 230px; }
+  .fb-branch-bottom .fb-h6 { left: 54px;  top: 286px; }
+  
+  .fb-small-input {
+    display: block;
+  }
+  
+  .fb-small-field {
+    width: 100%;
+    height: 42px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #111827;
+    border-radius: 12px;
+    outline: none;
+    padding: 0 14px;
+    font-size: 14px;
+    line-height: 42px;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+  }
+  
+  .fb-small-field:focus {
+    border-color: #97b84f;
+    box-shadow: 0 0 0 3px rgba(151, 184, 79, 0.18);
+  }
+  
+  .fb-small-field::placeholder {
+    color: #6b7280;
+  }
+  
+  .fb-small-field:disabled {
+    background: #f8fafc;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+
+  /* ADD THIS */
+
+/* arrow at end of diagonal (top branches) */
+.fb-branch-top .fb-diagonal-line::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 94%;
+  transform: translateX(-50%) rotate(-33deg);
+  width: 0;
+  height: 0;
+  border-top: 14px solid transparent;
+  border-bottom: 14px solid transparent;
+  border-left: 22px solid #9cbb52;
+}
+
+/* arrow at end of diagonal (bottom branches) */
+.fb-branch-bottom .fb-diagonal-line::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 94%;
+  transform: translateX(-50%) rotate(33deg);
+  width: 0;
+  height: 0;
+  border-top: 14px solid transparent;
+  border-bottom: 14px solid transparent;
+  border-left: 22px solid #9cbb52;
 }

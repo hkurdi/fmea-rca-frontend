@@ -95,7 +95,7 @@ export const defaultFmeaPip = {
 
 export const defaultFishbone = {
   problemStatement: '',
-  majorCauses: Array.from({ length: 5 }).map((_, index) => ({
+  majorCauses: Array.from({ length: 6 }).map((_, index) => ({
     id: crypto.randomUUID(),
     label: `Major Cause ${index + 1}`,
     primaryCauses: Array.from({ length: 2 }).map((__, pIndex) => ({
